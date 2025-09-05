@@ -267,6 +267,7 @@ export default function Home() {
   const [loading, setLoading] = useState(false);
   const [copiedId, setCopiedId] = useState(null);
   const [selectedImage, setSelectedImage] = useState(null);
+  const [selectedImagePreviewUrl, setSelectedImagePreviewUrl] = useState(null);
   const [threadId, setThreadId] = useState(null);
   const [activeSection, setActiveSection] = useState("chat");
   const [language, setLanguage] = useState("ar");
@@ -327,6 +328,17 @@ export default function Home() {
       messagesContainerRef.current.scrollTop = messagesContainerRef.current.scrollHeight;
     }
   }, [messages]);
+
+  // Generate and cleanup preview URL for selected image
+  useEffect(() => {
+    if (!selectedImage) {
+      setSelectedImagePreviewUrl(null);
+      return;
+    }
+    const url = URL.createObjectURL(selectedImage);
+    setSelectedImagePreviewUrl(url);
+    return () => URL.revokeObjectURL(url);
+  }, [selectedImage]);
 
   const sendMessage = async (e) => {
     e.preventDefault();
@@ -785,6 +797,34 @@ export default function Home() {
 
             {/* Input Form */}
             <div className="border-t border-gray-100 p-4">
+              {selectedImage && selectedImagePreviewUrl && (
+                <div className="mb-3 p-2 bg-gray-50 border border-gray-200 rounded-lg flex items-center gap-3 text-left" dir="ltr">
+                  <img
+                    src={selectedImagePreviewUrl}
+                    alt="Selected image preview"
+                    className="w-14 h-14 rounded object-cover border"
+                  />
+                  <div className="flex-1 min-w-0">
+                    <div className="text-sm text-gray-700 truncate">{selectedImage.name}</div>
+                    <div className="text-xs text-gray-500">
+                      {(selectedImage.size / 1024 < 1024
+                        ? `${Math.round(selectedImage.size / 1024)} KB`
+                        : `${(selectedImage.size / (1024 * 1024)).toFixed(1)} MB`)}
+                    </div>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setSelectedImage(null)}
+                    className="p-2 text-gray-500 hover:text-red-600"
+                    aria-label="Remove selected image"
+                    title="Remove image"
+                  >
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                      <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
+                    </svg>
+                  </button>
+                </div>
+              )}
               <form onSubmit={sendMessage} className="flex gap-2">
                 <input 
                   type="text" 
@@ -817,8 +857,8 @@ export default function Home() {
                     ${selectedImage 
                       ? 'bg-green-500 hover:bg-green-600' 
                       : 'bg-gray-100 hover:bg-gray-200'}`}
-                  title={t.chat.imageSelected}
-                  aria-label={t.chat.addImage}
+                  title={selectedImage ? t.chat.imageSelected : t.chat.addImage}
+                  aria-label={selectedImage ? t.chat.imageSelected : t.chat.addImage}
                 >
                   <svg 
                     className={`w-5 h-5 ${selectedImage ? 'text-white' : 'text-gray-600'}`}
