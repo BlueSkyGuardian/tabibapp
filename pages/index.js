@@ -276,6 +276,54 @@ export default function Home() {
   const fileInputRef = useRef(null);
   const messagesContainerRef = useRef(null);
 
+  // Smooth scroll with header offset
+  const scrollElementWithOffset = (el) => {
+    if (!el || typeof window === 'undefined') return;
+    const header = document.querySelector('header');
+    const headerHeight = header ? header.offsetHeight : 0;
+    const elTop = el.getBoundingClientRect().top + window.pageYOffset;
+    const target = Math.max(elTop - headerHeight - 12, 0);
+    window.scrollTo({ top: target, behavior: 'smooth' });
+  };
+
+  // Scroll on initial load and when browser history (path) changes
+  useEffect(() => {
+    const pathToSection = {
+      '/chat': 'chat',
+      '/features': 'features',
+      '/reviews': 'reviews',
+      '/about': 'about',
+    };
+
+    const applyPathOrQuery = () => {
+      if (typeof window === 'undefined') return;
+      const path = window.location.pathname;
+      let id = pathToSection[path] || '';
+
+      if (!id) {
+        const params = new URLSearchParams(window.location.search);
+        const q = params.get('section');
+        if (q) {
+          id = q;
+          // Normalize query to clean path
+          const newPath = `/${q}`;
+          if (pathToSection[newPath] === q) {
+            history.replaceState(null, '', newPath);
+          }
+        }
+      }
+
+      if (!id) return;
+      setActiveSection(id);
+      const el = document.getElementById(id);
+      if (el) scrollElementWithOffset(el);
+    };
+
+    applyPathOrQuery();
+    window.addEventListener('popstate', applyPathOrQuery);
+    return () => window.removeEventListener('popstate', applyPathOrQuery);
+  }, []);
+
   const t = translations[language];
 
   useEffect(() => {
@@ -286,7 +334,7 @@ export default function Home() {
     
     // Load saved language preference
     const savedLanguage = localStorage.getItem('tabib_language');
-    if (savedLanguage && ['ar', 'en', 'fr'].includes(savedLanguage)) {
+    if (savedLanguage && ['ar', 'fr'].includes(savedLanguage)) {
       setLanguage(savedLanguage);
     }
   }, []);
@@ -420,10 +468,14 @@ export default function Home() {
 
   const scrollToSection = (sectionId) => {
     setActiveSection(sectionId);
-    const element = document.getElementById(sectionId);
-    if (element) {
-      element.scrollIntoView({ behavior: 'smooth' });
+    if (typeof window !== 'undefined') {
+      const path = `/${sectionId}`;
+      if (window.location.pathname !== path) {
+        history.pushState(null, '', path);
+      }
     }
+    const element = document.getElementById(sectionId);
+    if (element) scrollElementWithOffset(element);
   };
 
   // Add this function to clear the thread and reset the chat
@@ -485,28 +537,12 @@ export default function Home() {
               >
                 <div className="w-6 h-4 rounded border border-gray-300 overflow-hidden">
                   {language === 'ar' ? (
-                    <img 
-                      src="https://flagcdn.com/w40/ma.png" 
-                      alt="Morocco Flag" 
-                      className="w-full h-full object-cover"
-                    />
-                  ) : language === 'en' ? (
-                    <img 
-                      src="https://flagcdn.com/w40/gb.png" 
-                      alt="UK Flag" 
-                      className="w-full h-full object-cover"
-                    />
+                    <img src="https://flagcdn.com/w40/ma.png" alt="Morocco Flag" className="w-full h-full object-cover" />
                   ) : (
-                    <img 
-                      src="https://flagcdn.com/w40/fr.png" 
-                      alt="France Flag" 
-                      className="w-full h-full object-cover"
-                    />
+                    <img src="https://flagcdn.com/w40/fr.png" alt="France Flag" className="w-full h-full object-cover" />
                   )}
                 </div>
-                <span className="hidden sm:inline">
-                  {language === 'ar' ? 'العربية' : language === 'en' ? 'English' : 'Français'}
-                </span>
+                <span className="hidden sm:inline">{language === 'ar' ? 'العربية' : 'Français'}</span>
                 <svg className="w-4 h-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
                 </svg>
@@ -533,24 +569,7 @@ export default function Home() {
                         </svg>
                       )}
                     </button>
-                    <button
-                      onClick={() => { setLanguage('en'); setIsLanguageDropdownOpen(false); }}
-                      className={`w-full flex items-center space-x-3 rtl:space-x-reverse px-4 py-2 text-sm hover:bg-gray-100 transition-colors ${
-                        language === 'en' ? 'bg-blue-50 text-blue-600' : 'text-gray-700'
-                      }`}
-                    >
-                      <img 
-                        src="https://flagcdn.com/w40/gb.png" 
-                        alt="UK Flag" 
-                        className="w-6 h-4 rounded border border-gray-300 object-cover"
-                      />
-                      <span>English</span>
-                      {language === 'en' && (
-                        <svg className="w-4 h-4 text-blue-600 ml-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                        </svg>
-                      )}
-                    </button>
+                    
                     <button
                       onClick={() => { setLanguage('fr'); setIsLanguageDropdownOpen(false); }}
                       className={`w-full flex items-center space-x-3 rtl:space-x-reverse px-4 py-2 text-sm hover:bg-gray-100 transition-colors ${
@@ -583,28 +602,12 @@ export default function Home() {
                 >
                   <div className="w-5 h-3 rounded border border-gray-300 overflow-hidden">
                     {language === 'ar' ? (
-                      <img 
-                        src="https://flagcdn.com/w40/ma.png" 
-                        alt="Morocco Flag" 
-                        className="w-full h-full object-cover"
-                      />
-                    ) : language === 'en' ? (
-                      <img 
-                        src="https://flagcdn.com/w40/gb.png" 
-                        alt="UK Flag" 
-                        className="w-full h-full object-cover"
-                      />
+                      <img src="https://flagcdn.com/w40/ma.png" alt="Morocco Flag" className="w-full h-full object-cover" />
                     ) : (
-                      <img 
-                        src="https://flagcdn.com/w40/fr.png" 
-                        alt="France Flag" 
-                        className="w-full h-full object-cover"
-                      />
+                      <img src="https://flagcdn.com/w40/fr.png" alt="France Flag" className="w-full h-full object-cover" />
                     )}
                   </div>
-                  <span className="hidden xs:inline">
-                    {language === 'ar' ? 'ع' : language === 'en' ? 'EN' : 'FR'}
-                  </span>
+                  <span className="hidden xs:inline">{language === 'ar' ? 'ع' : 'FR'}</span>
                   <svg className="w-3 h-3 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
                   </svg>
@@ -626,19 +629,7 @@ export default function Home() {
                         />
                         <span>العربية</span>
                       </button>
-                      <button
-                        onClick={() => { setLanguage('en'); setIsLanguageDropdownOpen(false); }}
-                        className={`w-full flex items-center space-x-2 rtl:space-x-reverse px-3 py-2 text-xs hover:bg-gray-100 transition-colors ${
-                          language === 'en' ? 'bg-blue-50 text-blue-600' : 'text-gray-700'
-                        }`}
-                      >
-                        <img 
-                          src="https://flagcdn.com/w40/gb.png" 
-                          alt="UK Flag" 
-                          className="w-5 h-3 rounded border border-gray-300 object-cover"
-                        />
-                        <span>English</span>
-                      </button>
+                      
                       <button
                         onClick={() => { setLanguage('fr'); setIsLanguageDropdownOpen(false); }}
                         className={`w-full flex items-center space-x-2 rtl:space-x-reverse px-3 py-2 text-xs hover:bg-gray-100 transition-colors ${
