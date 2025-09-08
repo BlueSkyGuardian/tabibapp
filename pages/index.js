@@ -21,6 +21,7 @@ const translations = {
       }
     },
     chat: {
+      greeting: "سلام! أنا الطبيب ديالك. شنو هي الأعراض لي كتحس بيهم؟",
       title: "ابدأ محادثتك الطبية",
       subtitle: "اكتب أعراضك أو ارفع صورة للحصول على استشارة فورية",
       newChat: "بدء محادثة جديدة",
@@ -106,6 +107,7 @@ const translations = {
       }
     },
     chat: {
+      greeting: "Hello! I'm your doctor. What symptoms are you experiencing?",
       title: "Start Your Medical Chat",
       subtitle: "Write your symptoms or upload an image for instant consultation",
       newChat: "Start New Chat",
@@ -191,6 +193,7 @@ const translations = {
       }
     },
     chat: {
+      greeting: "Bonjour ! Je suis votre médecin. Quels symptômes ressentez-vous ?",
       title: "Commencez Votre Chat Médical",
       subtitle: "Écrivez vos symptômes ou téléchargez une image pour une consultation instantanée",
       newChat: "Nouveau Chat",
@@ -325,6 +328,23 @@ export default function Home() {
   }, []);
 
   const t = translations[language];
+
+  // When language changes, translate the initial assistant greeting
+  useEffect(() => {
+    // Only adjust if it's the initial greeting (single assistant message, no thread yet)
+    if (
+      messages.length === 1 &&
+      messages[0]?.role === 'assistant' &&
+      (!threadId) &&
+      [
+        translations.ar.chat.greeting,
+        translations.en.chat.greeting,
+        translations.fr.chat.greeting,
+      ].includes(messages[0].content)
+    ) {
+      setMessages([{ role: 'assistant', content: t.chat.greeting }]);
+    }
+  }, [language]);
 
   useEffect(() => {
     const savedThreadId = localStorage.getItem('tabib_thread_id');
@@ -483,13 +503,14 @@ export default function Home() {
     localStorage.removeItem('tabib_thread_id');
     setThreadId(null);
     setMessages([
-      { role: "assistant", content: "سلام! أنا الطبيب ديالك. شنو هي الأعراض لي كتحس بيهم؟" }
+      { role: "assistant", content: t.chat.greeting }
     ]);
     setInput("");
   };
 
+  // Toggle text direction by language (LTR for French, RTL otherwise)
   return (
-    <div dir="rtl" className="min-h-screen bg-gradient-to-b from-blue-50 to-white">
+    <div dir={language === 'fr' ? 'ltr' : 'rtl'} className="min-h-screen bg-gradient-to-b from-blue-50 to-white">
       {/* Header */}
       <header className="fixed top-0 left-0 right-0 bg-white shadow-lg z-50">
         <div className="max-w-6xl mx-auto px-4 py-3">
@@ -725,7 +746,7 @@ export default function Home() {
                       ? "self-end p-4 rounded-2xl shadow-sm max-w-xs md:max-w-md lg:max-w-lg text-black"
                       : "self-start p-4 rounded-2xl shadow-sm max-w-xs md:max-w-md lg:max-w-lg"}
                       style={m.role === "user" ? { backgroundColor: '#f5f5f5' } : m.role === "assistant" ? { backgroundColor: '#eaffea' } : {}}
-                      dir="rtl"
+                      dir={language === 'fr' ? 'ltr' : 'rtl'}
                     >
                       <pre className="whitespace-pre-wrap font-sans text-[15px] leading-relaxed">{m.content}</pre>
                       {m.image && (
