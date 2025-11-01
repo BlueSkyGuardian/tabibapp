@@ -1,6 +1,0 @@
-nul
-node_modules/
-.next/
-.git_backup/
-.DS_Store
-.env.local
